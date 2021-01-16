@@ -36,7 +36,21 @@
         </div>
         <div class="chat-box-bottom">
           <form v-on:submit.prevent="sendMessage()">
-            <v-text-field
+            <transition name="fade">
+              <div class="quick-reply-mobile-section" v-if="showQuickR">
+                <h5 style="text-align: center; font-size: 17px">Quick Actions</h5>
+                <hr style="border-color: white" />
+                <QuickActionMobile
+                  v-for="(action, actionKey) in quickAction"
+                  :key="actionKey"
+                  v-bind:loader="loader"
+                  v-bind:action="action"
+                  v-bind:text="action"
+                  v-on:get-quick-reply="getQuickReply(action)"
+                />
+              </div>
+            </transition>
+            <!-- <v-text-field
                     v-if="!getDirection"
                     color="#00CC33"
                     label=""
@@ -57,7 +71,57 @@
                     v-model="getUserMessage"
                     id="pac-input"
                     class="controls"
-            ></v-text-field>
+            ></v-text-field> -->
+
+            <v-row style="margin-top: -10px;" justify="center">
+              <v-col
+                cols="2"
+                md="1"
+                class="quick-reply-mobile"
+              >
+              <span v-if="showQuickR">
+                <v-btn @click="showQuickR = !showQuickR" class="mx-2"
+                       fab dark x-small color="#00CC33">
+                  <v-icon dark>mdi-minus</v-icon>
+                </v-btn>
+              </span>
+                <span v-else>
+                <v-btn @click="showQuickR = !showQuickR" class="mx-2"
+                       fab dark x-small color="#00CC33">
+                  <v-icon dark>mdi-plus</v-icon>
+                </v-btn>
+              </span>
+              </v-col>
+              <v-col
+                cols="8"
+                sm="12"
+                md="12"
+                lg="12"
+                xl="12"
+              >
+                <v-text-field
+                  color="#00CC33"
+                  label=""
+                  :dark=nightMode
+                  autocomplete="off"
+                  autofocus
+                  :disabled="loader"
+                  :loading=!getServiceReply
+                  placeholder="Type here..."
+                  v-model="getUserMessage"
+                ></v-text-field>
+              </v-col>
+              <v-col
+                cols="2"
+                md="4"
+                class="quick-reply-mobile"
+              >
+                <v-btn class="mx-2" fab dark x-small color="#00CC33" @click="sendMessage()">
+                  <v-icon dark style="padding-left: 3px">mdi-send</v-icon>
+                </v-btn>
+              </v-col>
+            </v-row>
+
           </form>
         </div>
       </div>
@@ -87,12 +151,18 @@ import WatsonSide from '../components/WatsonSide.vue';
 import AboutUs from '../components/About-Us.vue';
 import QuickAction from '../components/QuickAction.vue';
 import WatsonOption from '../components/WatsonOption.vue';
+import QuickActionMobile from '../components/QuickActionMobile.vue';
 
 export default {
   name: 'WatsonService',
   async mounted() {
     /* eslint-env jquery */
     this.getWatsonService();
+
+    $(window).on('resize', () => {
+      this.showQuickR = false;
+    });
+
     this.initMap();
     try {
       // const google = await gmapsInit();
@@ -118,6 +188,7 @@ export default {
     AboutUs,
     QuickAction,
     WatsonOption,
+    QuickActionMobile,
   },
   data() {
     return {
@@ -138,6 +209,7 @@ export default {
         // 'Check school fees', 'Get directions', 'Admissions', 'Post UTME', 'FAQs',
         'Check school fees', 'Admissions', 'Post UTME', 'FAQs',
       ],
+      showQuickR: false,
     };
   },
   methods: {
@@ -168,6 +240,8 @@ export default {
       this.socketObj.emit('chat message', value);
       this.getServiceReply = false;
       this.showOptions = false;
+      this.showQuickR = false;
+
       this.loader = true;
       const element = document.getElementById('chat-box');
       element.scrollTop = element.scrollHeight;
@@ -189,6 +263,8 @@ export default {
       this.socketObj.emit('chat message', this.getUserMessage);
       this.getServiceReply = false;
       this.showOptions = false;
+      this.showQuickR = false;
+
       this.loader = true;
       this.userSide(this.getUserMessage);
       this.getUserMessage = '';
@@ -246,6 +322,15 @@ export default {
 </script>
 
 <style scoped>
+  /*QUICK REPLY TRANSITION*/
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity .6s;
+  }
+  .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+    opacity: 0;
+  }
+  /*QUICK REPLY TRANSITION END*/
+
   .about-us {
     width: 25%;
     float: left;
@@ -265,6 +350,21 @@ export default {
     padding: 15px;
     float: left;
     margin-top: 10%;
+  }
+  .quick-reply-mobile {
+    display: none;
+  }
+  .quick-reply-mobile-section {
+    /*width: 30%;*/
+    position: absolute;
+    bottom: 76px;
+    left: -7px;
+    z-index: 20;
+  }
+  @media screen and (max-width: 495px) {
+    .quick-reply-mobile {
+      display: block;
+    }
   }
   .chat-box-in {
     /*margin-top: 40px;*/
@@ -327,6 +427,7 @@ export default {
   .chat-box-bottom form {
     width: 94%;
     margin: auto;
+    position: relative;
   }
   @media only screen and (max-width: 1190px) {
     .about-us {
